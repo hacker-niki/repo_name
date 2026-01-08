@@ -1,0 +1,11 @@
+# Django core
+Django==5.1.6
+
+# Database
+psycopg2-binary==2.9.9
+
+# HTTP requests
+requests==2.31.0
+
+# Production server
+gunicorn==21.2.0
