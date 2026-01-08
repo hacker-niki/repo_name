@@ -1,0 +1,80 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile.dev
+    command: ${WEB_COMMAND:-python manage.py runserver 0.0.0.0:8000}
+    volumes:
+      - ./web:/app
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      - DEBUG=${DEBUG:-1}
+      - POSTGRES_DB=${POSTGRES_DB:-django_db}
+      - POSTGRES_USER=${POSTGRES_USER:-django_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-django_password}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - backend
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-django_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-django_password}
+      - POSTGRES_DB=${POSTGRES_DB:-django_db}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-django_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  ollama:
+    build:
+      context: ./docker/ollama
+    volumes:
+      - ${HOME}/.ollama:/root/.ollama
+      - ./web/models:/models
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_PRELOAD_MODEL=${OLLAMA_PRELOAD_MODEL:-question_processor}
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q question_processor && curl -f http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - backend
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ${HOME}/.open-webui:/app/backend/data
+    ports:
+      - "3000:8080"
+    depends_on:
+      - ollama
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  postgres_data:

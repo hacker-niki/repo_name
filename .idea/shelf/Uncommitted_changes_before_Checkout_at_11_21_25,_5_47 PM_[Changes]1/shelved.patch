@@ -1,0 +1,60 @@
+Index: ../docker-compose.yml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>version: '3.8'\n\nservices:\n  web:\n    build: ./app\n    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; python manage.py runserver 0.0.0.0:8000'\n    volumes:\n      - ./app:/app\n    expose:\n      - 8000\n    environment:\n      - DEBUG=1\n      - DATABASE_URL=postgresql://django_traefik:django_traefik@db:5432/django_traefik\n    depends_on:\n      - db\n    labels:\n      - \"traefik.enable=true\"\n      - \"traefik.http.routers.django.rule=Host(`django.localhost`)\"\n  db:\n    image: postgres:15-alpine\n    volumes:\n      - postgres_data:/var/lib/postgresql/data/\n    expose:\n      - 5432\n    environment:\n      - POSTGRES_USER=django_traefik\n      - POSTGRES_PASSWORD=django_traefik\n      - POSTGRES_DB=django_traefik\n  traefik:\n    image: traefik:v2.9.6\n    ports:\n      - 8008:80\n      - 8081:8080\n    volumes:\n      - \"$PWD/traefik.dev.toml:/etc/traefik/traefik.toml\"\n      - \"/var/run/docker.sock:/var/run/docker.sock:ro\"\n\nvolumes:\n  postgres_data:\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/../docker-compose.yml b/../docker-compose.yml
+--- a/../docker-compose.yml	(revision 3800be54242177c165303bb778e0fdb7f25a8d66)
++++ b/../docker-compose.yml	(date 1763658241842)
+@@ -18,14 +18,15 @@
+       - "traefik.http.routers.django.rule=Host(`django.localhost`)"
+   db:
+     image: postgres:15-alpine
+-    volumes:
+-      - postgres_data:/var/lib/postgresql/data/
+-    expose:
+-      - 5432
+     environment:
+       - POSTGRES_USER=django_traefik
+       - POSTGRES_PASSWORD=django_traefik
+       - POSTGRES_DB=django_traefik
++      - PGDATA=/var/lib/postgresql/data
++    volumes:
++      - postgres_data:/var/lib/postgresql
++    expose:
++      - 5432
+   traefik:
+     image: traefik:v2.9.6
+     ports:
+Index: ../docker-compose.prod.yml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>version: '3.8'\n\nservices:\n  web:\n    build:\n      context: ./app\n      dockerfile: Dockerfile.prod\n    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; gunicorn --bind 0.0.0.0:8000 config.wsgi'\n    expose:\n      - 8000\n    environment:\n      - DEBUG=0\n      - DATABASE_URL=postgresql://django_traefik:django_traefik@db:5432/django_traefik\n      - DJANGO_ALLOWED_HOSTS=.your-domain.com\n    depends_on:\n      - db\n    labels:\n      - \"traefik.enable=true\"\n      - \"traefik.http.routers.django.rule=Host(`django-traefik.your-domain.com`)\"\n      - \"traefik.http.routers.django.tls=true\"\n      - \"traefik.http.routers.django.tls.certresolver=letsencrypt\"\n  db:\n    image: postgres:15-alpine\n    volumes:\n      - postgres_data_prod:/var/lib/postgresql/data/\n    expose:\n      - 5432\n    environment:\n      - POSTGRES_USER=django_traefik\n      - POSTGRES_PASSWORD=django_traefik\n      - POSTGRES_DB=django_traefik\n  traefik:\n    build:\n      context: .\n      dockerfile: Dockerfile.traefik\n    ports:\n      - 80:80\n      - 443:443\n    volumes:\n      - \"/var/run/docker.sock:/var/run/docker.sock:ro\"\n      - \"./traefik-public-certificates:/certificates\"\n    labels:\n      - \"traefik.enable=true\"\n      - \"traefik.http.routers.dashboard.rule=Host(`dashboard-django-traefik.your-domain.com`)\"\n      - \"traefik.http.routers.dashboard.tls=true\"\n      - \"traefik.http.routers.dashboard.tls.certresolver=letsencrypt\"\n      - \"traefik.http.routers.dashboard.service=api@internal\"\n      - \"traefik.http.routers.dashboard.middlewares=auth\"\n      - \"traefik.http.middlewares.auth.basicauth.users=testuser:$$apr1$$jIKW.bdS$$eKXe4Lxjgy/rH65wP1iQe1\"\n\nvolumes:\n  postgres_data_prod:\n  traefik-public-certificates:\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/../docker-compose.prod.yml b/../docker-compose.prod.yml
+--- a/../docker-compose.prod.yml	(revision 3800be54242177c165303bb778e0fdb7f25a8d66)
++++ b/../docker-compose.prod.yml	(date 1763658274018)
+@@ -21,14 +21,15 @@
+       - "traefik.http.routers.django.tls.certresolver=letsencrypt"
+   db:
+     image: postgres:15-alpine
+-    volumes:
+-      - postgres_data_prod:/var/lib/postgresql/data/
+-    expose:
+-      - 5432
+     environment:
+       - POSTGRES_USER=django_traefik
+       - POSTGRES_PASSWORD=django_traefik
+       - POSTGRES_DB=django_traefik
++      - PGDATA=/var/lib/postgresql/data
++    volumes:
++      - postgres_data_prod:/var/lib/postgresql
++    expose:
++      - 5432
+   traefik:
+     build:
+       context: .

@@ -1,0 +1,13 @@
+Index: ../new_generation/.gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>mistral-finetune/\nvenv/\nphi3-direct-json-converter/\nfinal_gemma_sberquad_lora_cpu/\n
+===================================================================
+diff --git a/../new_generation/.gitignore b/../new_generation/.gitignore
+--- a/../new_generation/.gitignore	(revision 3800be54242177c165303bb778e0fdb7f25a8d66)
++++ b/../new_generation/.gitignore	(date 1759501944740)
+@@ -2,3 +2,4 @@
+ venv/
+ phi3-direct-json-converter/
+ final_gemma_sberquad_lora_cpu/
++gemma_sberquad_lora_cpu/
